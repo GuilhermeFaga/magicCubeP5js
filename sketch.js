@@ -6,6 +6,16 @@ const windowSize = {
 const cubeSize = 70;
 const cubeD = 3
 
+const Moves = Object.freeze({
+    "R": 1, "R_": 2,
+    "L": 3, "L_": 4,
+    "F": 5, "F_": 6,
+    "U": 7, "U_": 8,
+    "B": 9, "B_": 10,
+    "D": 11, "D_": 12
+})
+
+
 let magicCube;
 
 function setup() {
@@ -16,7 +26,7 @@ function setup() {
     for (let x = 0; x < cubeD; x++) {
         for (let y = 0; y < cubeD; y++) {
             for (let z = 0; z < cubeD; z++) {
-                if (x == 1 && y == 1 && z == 1) continue
+                // if (x == 1 && y == 1 && z == 1) continue
                 let c = new Cube(new Cords(x, y, z))
                 magicCube.addCube(c)
             }
@@ -26,7 +36,6 @@ function setup() {
 
 function draw() {
     background(100);
-
     // rotateZ(frameCount * 0.01);
     // rotateX(frameCount * 0.01);
     // rotateY(frameCount * 0.01);
@@ -36,8 +45,41 @@ function draw() {
 }
 
 function keyPressed() {
+    if (key == 'e') {
+        magicCube.makeMove(Moves.R_)
+    }
     if (key == 'd') {
-        magicCube.R()
+        magicCube.makeMove(Moves.R)
+    }
+    if (key == 'q') {
+        magicCube.makeMove(Moves.L_)
+    }
+    if (key == 'a') {
+        magicCube.makeMove(Moves.L)
+    }
+    if (key == 'z') {
+        magicCube.makeMove(Moves.F_)
+    }
+    if (key == 'x') {
+        magicCube.makeMove(Moves.F)
+    }
+    if (key == '2') {
+        magicCube.makeMove(Moves.U_)
+    }
+    if (key == 'w') {
+        magicCube.makeMove(Moves.U)
+    }
+    if (key == 'r') {
+        magicCube.makeMove(Moves.B_)
+    }
+    if (key == 'f') {
+        magicCube.makeMove(Moves.B)
+    }
+    if (key == 'c') {
+        magicCube.makeMove(Moves.D_)
+    }
+    if (key == 'v') {
+        magicCube.makeMove(Moves.D)
     }
 }
 
@@ -74,49 +116,33 @@ class MagicCube {
         }
     }
 
-    R() {
-        let maxI = cubeD - 1;
-        var newCords = []
-        var sideCords = [
-            new Cords(0, 0, maxI / 2),
-            new Cords(0, maxI / 2, maxI),
-            new Cords(0, maxI, maxI / 2),
-            new Cords(0, maxI / 2, 0)
-        ]
-        var edgeCords = [
-            new Cords(0, 0, 0),
-            new Cords(0, 0, maxI),
-            new Cords(0, maxI, maxI),
-            new Cords(0, maxI, 0),
-        ]
+    makeMove(move) {
+        var newPos = Util.getSide(move)
 
-        for (let i = 0; i < edgeCords.length; i++) {
-            var _i = i + 1;
-            if (_i >= edgeCords.length)
-                _i = 0;
-            const cords = edgeCords[_i];
-            const oldCords = edgeCords[i];
-            newCords.push({
-                old: magicCube.getCubeFromCords(oldCords).id,
-                new: new Cords(0, cords.y, cords.z)
-            })
-        }
+        Util.rotate(move, newPos)
 
-        for (let i = 0; i < sideCords.length; i++) {
-            var _i = i + 1;
-            if (_i >= sideCords.length)
-                _i = 0;
-            const cords = sideCords[_i];
-            const oldCords = sideCords[i];
-            newCords.push({
-                old: magicCube.getCubeFromCords(oldCords).id,
-                new: new Cords(0, cords.y, cords.z)
-            })
-        }
+        var newCords = this.createNewCords(newPos, move);
 
+        this.applyNewCords(newCords);
+    }
+
+    applyNewCords(newCords) {
         newCords.forEach(cords => {
-            magicCube.getCubeFromId(cords.old).setCords(cords.new)
+            magicCube.getCubeFromId(cords.old).setCords(cords.new);
         });
+    }
+
+    createNewCords(newPos, move) {
+        var newCords = [];
+        for (let i = 0; i < cubeD; i++) {
+            for (let j = 0; j < cubeD; j++) {
+                newCords.push({
+                    old: magicCube.getCubeFromCords(Util.getSideCords(move, i, j)).id,
+                    new: newPos[i][j]
+                });
+            }
+        }
+        return newCords;
     }
 }
 
@@ -168,5 +194,55 @@ class Cords {
             return true
         else
             return false
+    }
+}
+
+class Util {
+    static rotate(move, matrix) {
+        const N = matrix.length - 1;
+
+        var result
+
+        if (move % 2 == 0) {
+            result = matrix.map((row, i) =>
+                row.map((_val, j) => matrix[N - j][i]).reverse()
+            ).reverse();
+        } else {
+            result = matrix.map((row, i) =>
+                row.map((_val, j) => matrix[N - j][i])
+            );
+        }
+
+        matrix.length = 0;
+        matrix.push(...result);
+        return matrix;
+    }
+
+    static getSideCords(move, i, j) {
+        if (move == Moves.R || move == Moves.R_)
+            return new Cords(0, i, j)
+        if (move == Moves.L || move == Moves.L_)
+            return new Cords(cubeD - 1, i, j)
+        if (move == Moves.F || move == Moves.F_)
+            return new Cords(i, j, 0)
+        if (move == Moves.U || move == Moves.U_)
+            return new Cords(i, 0, j)
+        if (move == Moves.B || move == Moves.B_)
+            return new Cords(i, j, cubeD - 1)
+        if (move == Moves.D || move == Moves.D_)
+            return new Cords(i, cubeD - 1, j)
+    }
+
+    static getSide(move) {
+        var newPos = []
+
+        for (let i = 0; i < cubeD; i++) {
+            var row = []
+            for (let j = 0; j < cubeD; j++) {
+                row[j] = this.getSideCords(move, i, j)
+            }
+            newPos.push(row)
+        }
+        return newPos
     }
 }
